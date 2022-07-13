@@ -157,8 +157,6 @@ end
 
 lemma neg_one : (-1 : matrix l l ℝ)  = (-1 : ℝ) • 1  := by simp only [neg_smul, one_smul]
 
-#check neg_one_pow_eq_one_iff_even
-
 lemma minus_powers (n : ℕ) : (-1 : ℝ)^(n + n) = 1 := 
 begin
   rw neg_one_pow_eq_one_iff_even,
@@ -214,6 +212,9 @@ begin
   simp [h],
 end
 
+instance : has_neg (symplectic_group l) :=
+{ neg := λ A, ⟨-A, neg_mem l A.2⟩}
+
 
 lemma symplectic_det {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
   is_unit $ det A :=
@@ -258,9 +259,23 @@ noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A �
     ...                     = J l ℝ : by simp
   end }
 
+variables (A : symplectic_group l)
+
+
+noncomputable
+instance : group (symplectic_group l) := {
+  inv := λ A, -⟨J l ℝ, J_mem l⟩ * A,
+  mul_left_inv :=
+  begin
+    intros A,
+    sorry,
+  end,
+  .. submonoid.to_monoid _
+} 
+
 
 -- I think at this point I'm starting to realize I shouldn't be using `A ∈ symplectic l`...
-noncomputable instance : group (symplectic_group l) := {
+noncomputable instance old : group (symplectic_group l) := {
   inv := λ A, symplectic_inv l A.2, 
   mul_left_inv := 
   begin
