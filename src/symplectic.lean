@@ -346,9 +346,11 @@ mul_mem (mul_mem (neg_mem $ J_mem _) $ transpose_mem hA) $ J_mem _
 
 lemma inv_left_mul_aux {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
   -(J l ℝ ⬝ Aᵀ ⬝ J l ℝ ⬝ A) = 1 :=
-begin
-  sorry,
-end
+calc -(J l ℝ ⬝ Aᵀ ⬝ J l ℝ ⬝ A) = - J l ℝ ⬝ (Aᵀ ⬝ J l ℝ ⬝ A) : by simp [matrix.mul_assoc]
+...                            = - J l ℝ ⬝ J l ℝ : by {rw mem_symplectic_group_iff' at hA, rw hA}
+...                            = (-1 : ℝ) • (J l ℝ ⬝ J l ℝ) : by simp only [matrix.neg_mul, neg_smul, one_smul]
+...                            = (-1 : ℝ) • -1 : by rw J_squared
+...                            = 1 : by simp only [neg_smul_neg, one_smul]
 
 instance : has_inv (symplectic_group l) := {
   inv := λ A, ⟨- (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ),
