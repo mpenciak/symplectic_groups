@@ -24,14 +24,14 @@ lemma from_blocks_neg_2
   (A : matrix n l R) (B : matrix n m R) (C : matrix o l R) (D : matrix o m R) :
   - (from_blocks A B C D) = from_blocks (-A) (-B) (-C) (-D) :=
 begin
-  ext i j, rcases i; rcases j; simp [from_blocks]
+  ext i j, cases i; cases j; simp [from_blocks]
 end
 
 lemma from_blocks_neg
   (A : matrix n l S) (B : matrix n m S) (C : matrix o l S) (D : matrix o m S) :
   (-1 : S) • (from_blocks A B C D) = - from_blocks (A) (B) (C) (D) :=
 begin
-  ext i j, rcases i; rcases j; simp [from_blocks]
+  ext i j, cases i; cases j; simp [from_blocks]
 end
 
 end
@@ -44,7 +44,7 @@ open lie_algebra.symplectic
 
 variables (l) [decidable_eq l] [fintype l]  
 
-@[reducible] def symplectic : submonoid (matrix (l ⊕ l) (l ⊕ l)  ℝ) := 
+def symplectic_group : submonoid (matrix (l ⊕ l) (l ⊕ l)  ℝ) := 
 { carrier := { A | A ⬝ (J l ℝ) ⬝ Aᵀ = J l ℝ},
   mul_mem' := 
   begin
@@ -64,9 +64,36 @@ variables (l) [decidable_eq l] [fintype l]
 
 namespace symplectic 
 
-lemma J_mem : (J l ℝ) ∈ symplectic l :=
+lemma mem_symplectic_group_iff {A : matrix (l ⊕ l) (l ⊕ l)  ℝ} :
+  A ∈ symplectic_group l ↔ A ⬝ (J l ℝ) ⬝ Aᵀ = J l ℝ :=
+by simp [symplectic_group]
+
+instance coe_matrix : has_coe (symplectic_group l) (matrix (l ⊕ l) (l ⊕ l)  ℝ) := ⟨subtype.val⟩
+
+instance coe_fun : has_coe_to_fun (symplectic_group l) (λ _, (l ⊕ l) → (l ⊕ l) → ℝ) :=
+{ coe := λ A, A.val }
+
+section coe_lemmas
+
+variables (A B : symplectic_group l)
+
+--@[simp] lemma inv_val : ↑(A⁻¹) = (star A : matrix n n α) := rfl
+
+--@[simp] lemma inv_apply : ⇑(A⁻¹) = (star A : matrix n n α) := rfl
+
+@[simp] lemma mul_val : ↑(A * B) = A ⬝ B := rfl
+
+@[simp] lemma mul_apply : ⇑(A * B) = (A ⬝ B) := rfl
+
+@[simp] lemma one_val : ↑(1 : symplectic_group l) = (1 : matrix (l ⊕ l) (l ⊕ l)  ℝ) := rfl
+
+@[simp] lemma one_apply : ⇑(1 : symplectic_group l) = (1 : matrix (l ⊕ l) (l ⊕ l)  ℝ) := rfl
+
+end coe_lemmas
+
+lemma J_mem : (J l ℝ) ∈ symplectic_group l :=
 begin
-  simp only [submonoid.mem_mk, set.mem_set_of_eq],
+  rw mem_symplectic_group_iff,
   unfold J,
   rw [from_blocks_multiply, from_blocks_transpose, from_blocks_multiply],
   simp,
@@ -130,15 +157,20 @@ end
 
 lemma neg_one : (-1 : matrix l l ℝ)  = (-1 : ℝ) • 1  := by simp only [neg_smul, one_smul]
 
+#check neg_one_pow_eq_one_iff_even
+
 lemma minus_powers (n : ℕ) : (-1 : ℝ)^(n + n) = 1 := 
 begin
-  induction n with n hn,
+  rw neg_one_pow_eq_one_iff_even,
+  exact even_add_self n,
+  norm_num,
+  /-induction n with n hn,
   simp only [pow_zero],
   calc (-1: ℝ) ^ (n.succ + n.succ) = (-1 : ℝ)^((n + 1) + (n + 1)) : by refl
   ...                              = (-1 : ℝ)^(n + n)*(-1)^2 : by ring_exp
   ...                              = 1 * (-1 : ℝ)^2 : by rw hn
   ...                              = (-1 : ℝ)^2 : by rw one_mul
-  ...                              = 1 : by {simp only [neg_one_sq]} 
+  ...                              = 1 : by {simp only [neg_one_sq]} -/
 end
 
 lemma J_det : det (J l ℝ) = 1 ∨ det (J l ℝ) = - 1:=
@@ -166,25 +198,27 @@ end
 
 lemma pm_one_unit {S : Type*} [ring S] {x : S} (h : x = 1 ∨ x = -1) : is_unit x := 
 begin
-cases h,
-{simp [h],},
-{ rw h,
-use -1,
-simp,}
+  cases h,
+  {simp [h],},
+  { rw h,
+    use -1,
+    simp,}
 end
 
 lemma J_det_unit : is_unit (det (J l ℝ)) := pm_one_unit (J_det l)
 
-lemma neg_mem {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (h : A ∈ symplectic l) : -A ∈ symplectic l :=
+lemma neg_mem {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (h : A ∈ symplectic_group l) :
+  -A ∈ symplectic_group l :=
 begin
-  simp only [submonoid.mem_mk, set.mem_set_of_eq] at h ⊢,
+  rw mem_symplectic_group_iff at h ⊢,
   simp [h],
 end
 
 
-lemma symplectic_det {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic l) : is_unit $ det A :=
+lemma symplectic_det {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
+  is_unit $ det A :=
 begin
-  simp only [submonoid.mem_mk, set.mem_set_of_eq] at hA,
+  rw mem_symplectic_group_iff at hA,
   apply_fun det at hA,
   simp at hA,
   have H := J_det l,
@@ -204,13 +238,16 @@ end
 
 -- Things have kind of started following apart starting here
 
-noncomputable instance {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic l) : invertible A := @matrix.invertible_of_det_invertible (l ⊕ l) ℝ _ _ _ A (is_unit.invertible (symplectic_det l hA))
+noncomputable instance {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
+  invertible A :=
+@matrix.invertible_of_det_invertible (l ⊕ l) ℝ _ _ _ A (is_unit.invertible (symplectic_det l hA))
 
-noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic l) : symplectic l := 
+noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
+  symplectic_group l := 
 { val := A⁻¹,
   property := 
   begin
-    simp only [submonoid.mem_mk, set.mem_set_of_eq] at hA ⊢,
+    rw mem_symplectic_group_iff at hA ⊢,
     apply_fun (λ x, A⁻¹ ⬝ (x) ⬝ (Aᵀ)⁻¹) at hA,
     rw matrix.transpose_nonsing_inv,
     calc A⁻¹ ⬝ J l ℝ ⬝ Aᵀ⁻¹ = A⁻¹ ⬝ (A ⬝ J l ℝ ⬝ Aᵀ) ⬝ Aᵀ⁻¹ : by exact hA.symm
@@ -223,7 +260,7 @@ noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A �
 
 
 -- I think at this point I'm starting to realize I shouldn't be using `A ∈ symplectic l`...
-noncomputable instance : group (symplectic l) := {
+noncomputable instance : group (symplectic_group l) := {
   inv := λ A, symplectic_inv l A.2, 
   mul_left_inv := 
   begin
@@ -231,7 +268,7 @@ noncomputable instance : group (symplectic l) := {
   unfold has_inv.inv,
   unfold div_inv_monoid.inv,
   unfold symplectic_inv,
-  simp, 
+  simp,
   -- Not sure how to deal with this `⟨(↑A)⁻¹, _⟩ * A = 1`
   sorry
   end,
