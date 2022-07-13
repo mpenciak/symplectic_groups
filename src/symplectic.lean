@@ -263,19 +263,20 @@ noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A �
 { val := A⁻¹,
   property :=
   begin
-    haveI : invertible A := @matrix.invertible_of_det_invertible (l ⊕ l) ℝ _ _ _ A (is_unit.invertible (symplectic_det hA)),
-    haveI : invertible Aᵀ := @matrix.invertible_of_det_invertible (l ⊕ l) ℝ _ _ _ Aᵀ
-      (by { rw matrix.det_transpose, exact is_unit.invertible (symplectic_det hA) }),
+    have huA := symplectic_det hA,
+    have huAT : is_unit (Aᵀ).det :=
+    begin
+      rw matrix.det_transpose,
+      exact huA,
+    end,
     rw mem_symplectic_group_iff at hA ⊢,
     apply_fun (λ x, A⁻¹ ⬝ (x) ⬝ (Aᵀ)⁻¹) at hA,
     rw matrix.transpose_nonsing_inv,
-    calc A⁻¹ ⬝ J l ℝ ⬝ Aᵀ⁻¹ = A⁻¹ ⬝ (A ⬝ J l ℝ ⬝ Aᵀ) ⬝ Aᵀ⁻¹ : by exact hA.symm
+    calc A⁻¹ ⬝ J l ℝ ⬝ Aᵀ⁻¹ = A⁻¹ ⬝ (A ⬝ J l ℝ ⬝ Aᵀ) ⬝ Aᵀ⁻¹ : by rw hA
     ...                     = A⁻¹ ⬝ A ⬝ J l ℝ ⬝ Aᵀ ⬝ Aᵀ⁻¹ : by simp only [matrix.mul_assoc]
     ...                     = (A⁻¹ ⬝ A) ⬝ (J l ℝ) ⬝ (Aᵀ ⬝ Aᵀ⁻¹) : by simp only [matrix.mul_assoc]
-    ...                     = (⅟ A ⬝ A) ⬝ (J l ℝ) ⬝ (Aᵀ ⬝ Aᵀ⁻¹) : by rw matrix.inv_of_eq_nonsing_inv
-    ...                     = 1 ⬝ (J l ℝ) ⬝ (Aᵀ ⬝ Aᵀ⁻¹) : by rw matrix.inv_of_mul_self
-    ...                     = 1 ⬝ (J l ℝ) ⬝ (Aᵀ ⬝ (⅟ (Aᵀ))) : by rw matrix.inv_of_eq_nonsing_inv
-    ...                     = 1 ⬝ (J l ℝ) ⬝ 1 : by rw matrix.mul_inv_of_self
+    ...                     = 1 ⬝ (J l ℝ) ⬝ (Aᵀ ⬝ Aᵀ⁻¹) : by rw A.nonsing_inv_mul huA
+    ...                     = 1 ⬝ (J l ℝ) ⬝ 1 : by rw Aᵀ.mul_nonsing_inv huAT
     ...                     = J l ℝ : by simp
   end }
 
