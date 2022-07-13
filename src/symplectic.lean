@@ -40,7 +40,7 @@ section
 
 open lie_algebra.symplectic
 
--- TODO: Open more sections to eliminate `l` as an explicit argument
+-- TODO: Open more sections to eliminate `l` as an explicit argument in most places
 
 variables (l) [decidable_eq l] [fintype l]  
 
@@ -213,11 +213,11 @@ noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A �
     simp only [submonoid.mem_mk, set.mem_set_of_eq] at hA ⊢,
     apply_fun (λ x, A⁻¹ ⬝ (x) ⬝ (Aᵀ)⁻¹) at hA,
     rw matrix.transpose_nonsing_inv,
-    -- change A⁻¹ * A * J l ℝ * Aᵀ * Aᵀ⁻¹ = A⁻¹ * J l ℝ * Aᵀ⁻¹ at hA,
     calc A⁻¹ ⬝ J l ℝ ⬝ Aᵀ⁻¹ = A⁻¹ ⬝ (A ⬝ J l ℝ ⬝ Aᵀ) ⬝ Aᵀ⁻¹ : by exact hA.symm
-    ...                     = A⁻¹ * A * J l ℝ * Aᵀ * Aᵀ⁻¹ : by sorry
+    -- These should be easy but I'm stuck on them as well (`change` worked befoe)
+    ...                     = A⁻¹ * A * J l ℝ * Aᵀ * Aᵀ⁻¹ : by sorry 
     ...                     = (A⁻¹ * A) * (J l ℝ) * (Aᵀ * Aᵀ⁻¹) : by simp only [mul_assoc]
-    ...                     = 1 * (J l ℝ) * 1 : by sorry -- should be `inv_of_mul_self` & `mul_inv_of_self`?
+    ...                     = 1 * (J l ℝ) * 1 : by sorry -- should be `inv_of_mul_self` & `mul_inv_of_self` or something?
     ...                     = J l ℝ : by simp
   end }
 
