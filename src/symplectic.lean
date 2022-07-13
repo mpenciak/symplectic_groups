@@ -301,8 +301,40 @@ def computable_symp_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplec
 --     sorry
 --   end }
 
+lemma inv_mem_aux {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
+  - (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ) ∈ symplectic_group l :=
+begin
+  sorry,
+end
+
+lemma inv_left_mul_aux {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
+  -(J l ℝ ⬝ Aᵀ ⬝ J l ℝ ⬝ A) = 1 :=
+begin
+  sorry,
+end
+
+instance : has_inv (symplectic_group l) := {
+  inv := λ A, ⟨- (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ), inv_mem_aux A.2⟩,
+}
+
+@[simp] lemma coe_inv (A : symplectic_group l): (↑(A⁻¹) : matrix _ _ _) = - (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ) := rfl
+
+@[simp] lemma inv_apply (A : symplectic_group l): ⇑(A⁻¹) = - (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ) := rfl
+
+instance : group (symplectic_group l) := {
+  inv := has_inv.inv, -- todo for MD: this seems fishy
+  mul_left_inv :=
+  begin
+    intro A,
+    apply subtype.ext,
+    simp,
+    exact inv_left_mul_aux A.2,
+  end,
+  .. submonoid.to_monoid _
+}
+
 -- I think at this point I'm starting to realize I shouldn't be using `A ∈ symplectic l`...
-noncomputable instance : group (symplectic_group l) := {
+noncomputable instance old : group (symplectic_group l) := {
   inv := λ A, symplectic_inv A.2, 
   mul_left_inv := 
   begin
