@@ -52,15 +52,16 @@ def symplectic_group : submonoid (matrix (l ⊕ l) (l ⊕ l)  ℝ) :=
     --change (a * b) * (J l ℝ) * (a * b)ᵀ = J l ℝ,
     --change (a) * (J l ℝ) * (a)ᵀ = J l ℝ at ha,
     --change (b) * (J l ℝ) * (b)ᵀ = J l ℝ at hb,
-    simp only [mul_eq_mul, set.mem_set_of_eq, transpose_mul] at *, 
+    simp only [mul_eq_mul, set.mem_set_of_eq, transpose_mul] at *,
     rw ←matrix.mul_assoc,
-    rw matrix.mul_assoc _ _ (bᵀ),
-    rw matrix.mul_assoc a b _,
-    rw ←matrix.mul_assoc b _ bᵀ,
+    rw a.mul_assoc,
+    rw a.mul_assoc,
     rw hb,
     exact ha,
   end,
   one_mem' := by simp }
+
+variables {l} -- MD: I am making the l implicit whenever we know l from the context already
 
 namespace symplectic 
 
@@ -77,10 +78,6 @@ section coe_lemmas
 
 variables (A B : symplectic_group l)
 
---@[simp] lemma inv_val : ↑(A⁻¹) = (star A : matrix n n α) := rfl
-
---@[simp] lemma inv_apply : ⇑(A⁻¹) = (star A : matrix n n α) := rfl
-
 @[simp] lemma mul_val : ↑(A * B) = A ⬝ B := rfl
 
 @[simp] lemma mul_apply : ⇑(A * B) = (A ⬝ B) := rfl
@@ -91,6 +88,8 @@ variables (A B : symplectic_group l)
 
 end coe_lemmas
 
+variables (l)
+
 lemma J_mem : (J l ℝ) ∈ symplectic_group l :=
 begin
   rw mem_symplectic_group_iff,
@@ -99,9 +98,17 @@ begin
   simp,
 end
 
+def sym_J : symplectic_group l := ⟨J l ℝ, J_mem l⟩
+
+variables {l}
+
+@[simp] lemma coe_J : ↑(sym_J l) = J l ℝ := rfl
+
+@[simp] lemma J_apply : ⇑(sym_J l) = J l ℝ := rfl
+
 lemma neg_one_transpose : (-1 : matrix l l ℝ)ᵀ = -1 := by rw [transpose_neg, transpose_one]
 
-lemma J_transpose : - (J l ℝ)ᵀ = (J l ℝ) := 
+@[simp] lemma J_transpose : - (J l ℝ)ᵀ = (J l ℝ) := 
 begin
   unfold J,
   rw [from_blocks_transpose],
@@ -171,6 +178,8 @@ begin
   ...                              = 1 : by {simp only [neg_one_sq]} -/
 end
 
+variables (l)
+
 lemma J_det : det (J l ℝ) = 1 ∨ det (J l ℝ) = - 1:=
 begin
   have H : (det (J l ℝ)) * (det (J l ℝ)) = 1 := by {
@@ -194,6 +203,8 @@ begin
   exact H2,
 end
 
+variables {l}
+
 lemma pm_one_unit {S : Type*} [ring S] {x : S} (h : x = 1 ∨ x = -1) : is_unit x := 
 begin
   cases h,
@@ -213,8 +224,11 @@ begin
 end
 
 instance : has_neg (symplectic_group l) :=
-{ neg := λ A, ⟨-A, neg_mem l A.2⟩}
+{ neg := λ A, ⟨-A, neg_mem A.2⟩}
 
+@[simp] lemma coe_neg (A : symplectic_group l): (↑(-A) : matrix _ _ _) = -A := rfl
+
+@[simp] lemma neg_apply (A : symplectic_group l): ⇑(-A) = -A := rfl
 
 lemma symplectic_det {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
   is_unit $ det A :=
@@ -238,11 +252,12 @@ begin
 end
 
 -- Things have kind of started following apart starting here
-
+/-
 noncomputable instance {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
   invertible A :=
 @matrix.invertible_of_det_invertible (l ⊕ l) ℝ _ _ _ A (is_unit.invertible (symplectic_det l hA))
 
+-- MD: I don't think that we will need this
 noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
   symplectic_group l := 
 { val := A⁻¹,
@@ -257,23 +272,28 @@ noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A �
     ...                     = (A⁻¹ * A) * (J l ℝ) * (Aᵀ * Aᵀ⁻¹) : by simp only [mul_assoc]
     ...                     = 1 * (J l ℝ) * 1 : by sorry -- should be `inv_of_mul_self` & `mul_inv_of_self` or something?
     ...                     = J l ℝ : by simp
-  end }
+  end }-/
 
 variables (A : symplectic_group l)
 
+lemma J_mul_J_mul (A : symplectic_group l) : -(sym_J l) * A * (sym_J l) * A = 1 :=
+begin
+  apply subtype.ext,
+  simp,
+  -- this should now be easier
+  sorry,
+end
 
-noncomputable
 instance : group (symplectic_group l) := {
-  inv := λ A, -⟨J l ℝ, J_mem l⟩ * A,
-  mul_left_inv :=
-  begin
-    intros A,
-    sorry,
-  end,
+  inv := λ A, -(sym_J l) * A * (sym_J l),
+  mul_left_inv := J_mul_J_mul,
   .. submonoid.to_monoid _
 } 
 
 
+--@[simp] lemma inv_apply : ⇑(A⁻¹) = -(J l ℝ ⬝ A ⬝ J l ℝ) := rfl
+
+/-
 -- I think at this point I'm starting to realize I shouldn't be using `A ∈ symplectic l`...
 noncomputable instance old : group (symplectic_group l) := {
   inv := λ A, symplectic_inv l A.2, 
@@ -288,7 +308,7 @@ noncomputable instance old : group (symplectic_group l) := {
   sorry
   end,
   .. submonoid.to_monoid _ }
-  
+  -/
 end symplectic
 
 end
