@@ -3,6 +3,7 @@ import linear_algebra.unitary_group
 import data.real.basic
 import data.nat.basic
 import linear_algebra.matrix.determinant
+import linear_algebra.matrix.nonsingular_inverse
 
 /-
 Unrelated ideas that have come up:
@@ -84,6 +85,10 @@ variables (A B : symplectic_group l)
 
 @[simp] lemma one_apply : ⇑(1 : symplectic_group l) = (1 : matrix (l ⊕ l) (l ⊕ l)  ℝ) := rfl
 
+lemma mul_mem {A B : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) (hB : B ∈ symplectic_group l) : 
+A ⬝ B ∈ symplectic_group l :=
+submonoid.mul_mem _ hA hB
+
 end coe_lemmas
 
 variables (l)
@@ -106,7 +111,7 @@ variables {l}
 
 lemma neg_one_transpose : (-1 : matrix l l ℝ)ᵀ = -1 := by rw [transpose_neg, transpose_one]
 
-@[simp] lemma J_transpose : - (J l ℝ)ᵀ = (J l ℝ) := 
+@[simp] lemma J_transpose : (J l ℝ)ᵀ = - (J l ℝ) := 
 begin
   unfold J,
   rw [from_blocks_transpose],
@@ -166,6 +171,7 @@ begin
   rw [matrix.mul_neg, J_squared],
   exact neg_neg 1,
 end
+
 
 lemma neg_one : (-1 : matrix l l ℝ)  = (-1 : ℝ) • 1  := by simp only [neg_smul, one_smul]
 
@@ -256,6 +262,32 @@ begin
   exact pm_one_unit hA,},
 end
 
+lemma transpose_mem {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) : Aᵀ ∈ symplectic_group l :=
+begin
+  rw mem_symplectic_group_iff at ⊢ hA,
+  rw transpose_transpose,
+  have huA := symplectic_det hA,
+  have huAT : is_unit (Aᵀ).det :=
+  begin
+    rw matrix.det_transpose,
+    exact huA,
+  end,
+
+  calc Aᵀ ⬝ J l ℝ ⬝ A = - Aᵀ ⬝ (J l ℝ)⁻¹ ⬝ A  : by {rw J_inv, simp}
+  -- ...                 = - Aᵀ ⬝ (J l ℝ)⁻¹ ⬝ A  : by 
+  ...                 = - Aᵀ ⬝ (A ⬝ J l ℝ ⬝ Aᵀ)⁻¹ ⬝ A : by rw hA
+  ...                 = - (Aᵀ ⬝ (Aᵀ⁻¹ ⬝ (J l ℝ)⁻¹)) ⬝ A⁻¹ ⬝ A : by simp [matrix.mul_inv_rev, matrix.mul_assoc]
+  ...                 = - (J l ℝ)⁻¹ : by rw [matrix.mul_nonsing_inv_cancel_left _ _ huAT, nonsing_inv_mul_cancel_right _ _ huA]
+  ...                 = (J l ℝ) : by simp [J_inv]
+end
+
+lemma transpose_mem_iff {A : matrix (l ⊕ l) (l ⊕ l) ℝ} : Aᵀ ∈ symplectic_group l ↔ A ∈ symplectic_group l :=
+⟨λ hA, by simpa using transpose_mem hA , transpose_mem⟩
+
+lemma mem_symplectic_group_iff' {A : matrix (l ⊕ l) (l ⊕ l)  ℝ} :
+  A ∈ symplectic_group l ↔ Aᵀ ⬝ (J l ℝ) ⬝ A = J l ℝ := 
+by rw [←transpose_mem_iff, mem_symplectic_group_iff,transpose_transpose]
+
 -- Things have kind of started following apart starting here
 
 noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
@@ -303,9 +335,14 @@ def computable_symp_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplec
 
 lemma inv_mem_aux {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
   - (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ) ∈ symplectic_group l :=
-begin
-  sorry,
-end
+mul_mem (mul_mem (neg_mem $ J_mem _) $ transpose_mem hA) $ J_mem _ 
+  -- simp only [matrix.neg_mul, transpose_neg, transpose_mul, J_transpose, transpose_transpose, matrix.mul_neg, neg_neg],
+  -- rw matrix.mul_assoc _ _ (J l ℝ),
+  -- rw J_squared,
+  -- rw matrix.transpose_mul,
+  -- rw matrix.transpose_mul,
+  -- rw matrix.transpose_transpose,
+  -- rw matrix.transpose_neg,
 
 lemma inv_left_mul_aux {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
   -(J l ℝ ⬝ Aᵀ ⬝ J l ℝ ⬝ A) = 1 :=
@@ -314,7 +351,8 @@ begin
 end
 
 instance : has_inv (symplectic_group l) := {
-  inv := λ A, ⟨- (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ), inv_mem_aux A.2⟩,
+  inv := λ A, ⟨- (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ),
+    mul_mem (mul_mem (neg_mem $ J_mem _) $ transpose_mem A.2) $ J_mem _⟩,
 }
 
 @[simp] lemma coe_inv (A : symplectic_group l): (↑(A⁻¹) : matrix _ _ _) = - (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ) := rfl
@@ -322,7 +360,6 @@ instance : has_inv (symplectic_group l) := {
 @[simp] lemma inv_apply (A : symplectic_group l): ⇑(A⁻¹) = - (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ) := rfl
 
 instance : group (symplectic_group l) := {
-  inv := has_inv.inv, -- todo for MD: this seems fishy
   mul_left_inv :=
   begin
     intro A,
@@ -330,6 +367,7 @@ instance : group (symplectic_group l) := {
     simp,
     exact inv_left_mul_aux A.2,
   end,
+  .. symplectic_group.has_inv,
   .. submonoid.to_monoid _
 }
 
