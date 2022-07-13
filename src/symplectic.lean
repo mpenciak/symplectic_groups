@@ -280,6 +280,26 @@ noncomputable def symplectic_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A �
     ...                     = J l ℝ : by simp
   end }
 
+def computable_symp_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) :
+  A ⬝ (- (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ)) = 1 :=
+  begin
+  rw mem_symplectic_group_iff at hA,
+  calc A ⬝ (-J l ℝ ⬝ Aᵀ ⬝ J l ℝ) = - (A ⬝ (J l ℝ) ⬝ Aᵀ) ⬝ (J l ℝ) : by simp [matrix.mul_assoc]
+  ...                            = - (J l ℝ) ⬝ (J l ℝ) : by rw hA
+  ...                            = (-1 : ℝ) • ( (J l ℝ) ⬝ (J l ℝ) ) : by simp
+  ...                            = - (-1) : by {rw J_squared, simp}
+  ...                            = 1 : by simp,
+  end
+
+-- def computable_symp_inv {A : matrix (l ⊕ l) (l ⊕ l) ℝ} (hA : A ∈ symplectic_group l) : 
+--   symplectic_group l :=
+-- { val := - (J l ℝ) ⬝ Aᵀ ⬝ (J l ℝ),
+--   property := 
+--   begin
+--     rw mem_symplectic_group_iff at hA ⊢,
+--     simp
+--     sorry
+--   end }
 
 -- I think at this point I'm starting to realize I shouldn't be using `A ∈ symplectic l`...
 noncomputable instance : group (symplectic_group l) := {
@@ -289,13 +309,15 @@ noncomputable instance : group (symplectic_group l) := {
   intro A,
   apply subtype.ext,
   simp,
-  rw matrix.nonsing_inv_mul,
-  unfold has_inv.inv,
-  unfold div_inv_monoid.inv,
-  unfold symplectic_inv,
-  simp,
+  -- rw matrix.nonsing_inv_mul,
+  -- unfold has_inv.inv,
+  -- unfold div_inv_monoid.inv,
+  -- unfold symplectic_inv,
+
   -- Not sure how to deal with this `⟨(↑A)⁻¹, _⟩ * A = 1`
-  sorry
+  -- unfold matrix.mul,
+  show_term {change (A)⁻¹ ⬝ A = 1},
+  rw matrix.nonsing_inv_mul A (symplectic_det A.prop),
   end,
   .. submonoid.to_monoid _ }
   
